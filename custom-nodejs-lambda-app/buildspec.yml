@@ -1,0 +1,48 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 22
+    commands:
+      - echo "Using custom build environment"
+      - node -v
+      - npm -v
+
+  pre_build:
+    commands:
+      - echo Installing dependencies...
+      - npm install
+      - echo Running security checks...
+      - npm audit --production || true
+
+  build:
+    commands:
+      - echo Running tests...
+      - npm test
+      - echo Building the application...
+      - npm run build
+
+  post_build:
+    commands:
+      - echo Packaging the Lambda function...
+      - zip -r function.zip index.js app.js node_modules package.json
+      - echo ✅ Verifying function.zip existence and contents...
+      - ls -lh function.zip
+      - unzip -l function.zip
+      - echo ✅ Build completed on $(date)
+
+artifacts:
+  files:
+    - function.zip
+  discard-paths: yes
+
+reports:
+  jest-reports:
+    files:
+      - 'test-report.xml'
+    file-format: JUNITXML
+
+cache:
+  paths:
+    - 'node_modules/**/*'
